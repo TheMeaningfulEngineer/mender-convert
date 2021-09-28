@@ -106,6 +106,7 @@ done
 # but we do require it be present and hence we might need to generate
 # a filesystem image here.
 if [ ${nr_of_parts} -eq 1 ]; then
+    log_info "Detected only a single partition"
     log_info "Generating boot partition (required, does not exist in original image)"
     run_and_log_cmd "dd if=/dev/zero of=work/boot-generated.vfat count=${MENDER_BOOT_PART_SIZE_MB} bs=1M status=none"
     run_and_log_cmd "${MKFS_VFAT} work/boot-generated.vfat"
@@ -117,8 +118,12 @@ fi
 # image.
 if [ "${MENDER_COPY_BOOT_GAP}" == "y" ]; then
     log_info "Extracting boot gap to work/boot-gap.bin"
-    disk_extract_part "${disk_image}" \
-        1 $(($(disk_get_part_value ${disk_image} 1 START) - 1)) work/boot-gap.bin
+    local BOOT_GAP_SECTOR_START=1
+    local BOOT_GAP_SIZE=$(($(disk_get_part_value ${disk_image} 1 START) - 1))
+    disk_extract_part "${disk_image}"  \
+                      $BOOT_GAP_SECTOR_START  \
+                      $BOOT_GAP_SIZE \
+                      work/boot-gap.bin
 
     if [ "${MENDER_GRUB_EFI_INTEGRATION}" == "y" ]; then
         # Check for known U-Boot problems in the boot gap (probable boot loader
